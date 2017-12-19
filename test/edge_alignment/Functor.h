@@ -55,7 +55,7 @@ public:
             if (jacobians != NULL && jacobians[0] != NULL)
                 for (int i = 0; i != 6; ++i)
                     jacobians[0][i] = 0;
-            return false;
+            return true;
         }
 
 

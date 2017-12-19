@@ -30,12 +30,6 @@ int main (int argc, char *argv[])
         return s;
     };
 
-    std::cout << GlobalConfig::target_img_no << std::endl;
-    std::cout << getImgFile(GlobalConfig::source_img_no, true) << std::endl;
-    std::cout << getImgFile(GlobalConfig::source_img_no, false) << std::endl;
-    std::cout << getImgFile(GlobalConfig::target_img_no, true) << std::endl;
-    std::cout << getImgFile(GlobalConfig::target_img_no, false) << std::endl;
-
     Image img1(cv::imread(getImgFile(GlobalConfig::source_img_no, true), cv::IMREAD_UNCHANGED),
               cv::imread(getImgFile(GlobalConfig::source_img_no, false), cv::IMREAD_UNCHANGED));
     Image img2(cv::imread(getImgFile(GlobalConfig::target_img_no, true), cv::IMREAD_UNCHANGED),
@@ -55,8 +49,6 @@ int main (int argc, char *argv[])
     Sophus::SE3 T(T_init.rotation(), T_init.translation());
     Eigen::Matrix<double, 6, 1> se3 = T.log();
     std::cout << "initial pose: " << se3.transpose() << std::endl;
-
-
 
     // select points for align
     for (int u = 10; u != img1.gray.cols-10; ++u) {
