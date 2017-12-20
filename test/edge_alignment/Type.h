@@ -34,9 +34,8 @@ struct Image
         cv::cvtColor(color, gray, CV_BGR2GRAY);
     }
 
-    const cv::Mat color;
-    cv::Mat gray;
-    const cv::Mat depth;
+    const cv::Mat color, depth;
+    cv::Mat gray, distance;
 };
 
 struct CamConfig

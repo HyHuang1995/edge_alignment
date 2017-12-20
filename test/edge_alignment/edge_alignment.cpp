@@ -43,10 +43,15 @@ int main (int argc, char *argv[])
               GlobalConfig::canny_threshold_high,
               3, true);
 
-    cv::Mat dist;
-    cv::distanceTransform(cv::Scalar::all(255)-edge_img, dist, cv::DIST_L2, 3);
+    cv::Mat dist, edge;
+    cv::Canny(img2.gray, edge,
+              GlobalConfig::canny_threshold_low,
+              GlobalConfig::canny_threshold_high,
+              3, true);
+    cv::distanceTransform(cv::Scalar::all(255)-edge, dist, cv::DIST_L2, 3);
     cv::normalize(dist, dist, 0.0, 1.0, cv::NORM_MINMAX);
     dist.convertTo(dist, CV_8UC1, 255.0);
+    img2.distance = dist;
     // cv::imshow("test", dist); cv::waitKey(-1);
     // cv::imshow("test", test);
     // cv::imshow("edge", edge_img); //debug
@@ -69,7 +74,7 @@ int main (int argc, char *argv[])
             if (isedge != 0 && depth != 0) {
                 // construct measurements
                 Eigen::Vector3d pt = cam_config->projectionTo3D(u, v, depth);
-                pts.push_back(Measurement(Eigen::Vector2i(u, v), pt, pixel));
+                pts.push_back(Measurement(Eigen::Vector2i(u, v), pt, 0));
             }
         }
     }

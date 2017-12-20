@@ -102,20 +102,20 @@ public:
 protected:
     const bool isInImage(double &u, double &v) const
     {
-        return (u-2>0 && u+2<src_img.gray.cols &&
-                v-2>0 && v-2<src_img.gray.rows);
+        return (u-2>0 && u+2<src_img.distance.cols &&
+                v-2>0 && v-2<src_img.distance.rows);
     }
 
     float getPixel(double const &u, double const &v) const
     {
-        uchar* data = & src_img.gray.data[ int ( v ) * src_img.gray.step + int ( u ) ];
+        uchar* data = & src_img.distance.data[ int ( v ) * src_img.distance.step + int ( u ) ];
         double xx = u - floor ( u );
         double yy = v - floor ( v );
         return float (
                 ( 1-xx ) * ( 1-yy ) * data[0] +
                 xx* ( 1-yy ) * data[1] +
-                ( 1-xx ) *yy*data[ src_img.gray.step ] +
-                xx*yy*data[src_img.gray.step+1]
+                ( 1-xx ) *yy*data[ src_img.distance.step ] +
+                xx*yy*data[src_img.distance.step+1]
         );
 
         // return float(src_img.m_img.at<uchar>(static_cast<int>(v), static_cast<int>(u)));
