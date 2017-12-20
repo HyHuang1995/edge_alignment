@@ -3,8 +3,8 @@
 data_dir : "/home/ram/WorkSpace/Learning/vision/data/image_alignment/"
 color_prefix : "rgb"
 depth_prefix : "depth"
-source_image_no : 1
-target_image_no : 3
+source_image_no : 3
+target_image_no : 7
 file_format : ".png"
 # rgb : ["rgb1.png", "rgb2.png"]
 # depth : ["depth1.png", "depth2.png"]

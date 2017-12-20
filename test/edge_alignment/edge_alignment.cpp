@@ -42,6 +42,13 @@ int main (int argc, char *argv[])
               GlobalConfig::canny_threshold_low,
               GlobalConfig::canny_threshold_high,
               3, true);
+
+    cv::Mat dist;
+    cv::distanceTransform(cv::Scalar::all(255)-edge_img, dist, cv::DIST_L2, 3);
+    cv::normalize(dist, dist, 0.0, 1.0, cv::NORM_MINMAX);
+    dist.convertTo(dist, CV_8UC1, 255.0);
+    // cv::imshow("test", dist); cv::waitKey(-1);
+    // cv::imshow("test", test);
     // cv::imshow("edge", edge_img); //debug
 
     // initialize pose
@@ -82,8 +89,8 @@ int main (int argc, char *argv[])
     options.inner_iteration_tolerance = 1e-16;
     options.minimizer_progress_to_stdout = true;
     options.max_num_iterations = 1000;
-    options.function_tolerance = 1e-15;
-    options.parameter_tolerance = 1e-15;
+    // options.function_tolerance = 1e-15;
+    // options.parameter_tolerance = 1e-15;
 
     ceres::Solver::Summary summary;
 
@@ -112,6 +119,10 @@ int main (int argc, char *argv[])
 
     cv::cvtColor(edge_img, dis_img, CV_GRAY2BGR);
     dis_img.copyTo ( img_show ( cv::Rect ( 0, 0, cols, rows ) ) ); // edge
+
+    std::cout << (dist.type() == CV_32F) << std::endl;
+    cv::cvtColor(dist, dis_img, CV_GRAY2BGR);
+    dis_img.copyTo ( img_show ( cv::Rect ( cols, 0, cols, rows ) ) ); // edge
 
     cv::cvtColor(img2.gray, dis_img, CV_GRAY2BGR);
     for (auto &pt:pts)
