@@ -5,8 +5,7 @@
 #ifndef CERES_LEARNING_TYPE_H
 #define CERES_LEARNING_TYPE_H
 
-#include <memory>
-#include <iostream>
+#include "Config.h"
 
 #include <Eigen/Dense>
 
@@ -26,20 +25,47 @@ struct Measurement
 
 struct Image
 {
+    typedef std::shared_ptr<Image> Ptr;
+    typedef std::shared_ptr<Image const> ConstPtr;
+
     Image(cv::Mat const &img_, cv::Mat const &depth_)
             :color(img_), depth(depth_)
     {
-        if (img_.type() != CV_8UC3)
+        if (color.type() != CV_8UC3)
             throw std::runtime_error("please construct with color image");
+        if (depth.type() != CV_16UC1)
+            throw std::runtime_error("please construct with right format");
         cv::cvtColor(color, gray, CV_BGR2GRAY);
+
+        createDistanceTransfrom();
+    }
+
+    void createDistanceTransfrom() {
+        cv::Canny(gray, edge,
+                  GlobalConfig::canny_threshold_low,
+                  GlobalConfig::canny_threshold_high,
+                  3, true);
+
+        cv::distanceTransform(cv::Scalar::all(255)-edge,
+                              distance,
+                              cv::DIST_L2,
+                              3);
+
+        cv::normalize(distance, distance,
+                      0.0,
+                      1.0,
+                      cv::NORM_MINMAX);
+
+        distance.convertTo(distance, CV_8UC1, 255.0);
     }
 
     const cv::Mat color, depth;
-    cv::Mat gray, distance;
+    cv::Mat gray, distance, edge;
 };
 
-struct CamConfig
+class CamConfig
 {
+public:
     // factory function
     typedef std::shared_ptr<CamConfig> Ptr;
     static CamConfig::Ptr createCamConfig(Eigen::Matrix3d &cam, double s) {
@@ -48,13 +74,17 @@ struct CamConfig
 
     CamConfig(Eigen::Matrix3d &cam, double s)
             :fx(cam(0, 0)), fy(cam(1, 1)), cx(cam(0, 2)), cy(cam(1, 2)), scalar(s)
-    {}
+    {
+        std::cout << "fuck camera" << std::endl;
+        std::cout << this->scalar << std::endl;
+    }
 
     // projection function
     Eigen::Vector3d projectionTo3D(double u, double v, double d) const {
         double zz = d / this->scalar;
         double xx = zz* ( u- this->cx ) /this->fx;
         double yy = zz* ( v-this->cy ) /this->fy;
+
         return Eigen::Vector3d( xx, yy, zz );
     }
 
@@ -67,75 +97,5 @@ struct CamConfig
     const Eigen::Matrix3d cam;
     const double fx, fy, cx, cy, scalar;
 };
-
-class GlobalConfig
-{
-private:
-    static std::shared_ptr<GlobalConfig> m_configPtr;
-    // static double
-    cv::FileStorage m_file;
-    GlobalConfig() = default;
-
-public:
-    typedef std::shared_ptr<GlobalConfig> Ptr;
-
-    static void setConfigFile(std::string const &file_)
-    {
-        if ( m_configPtr == nullptr )
-            m_configPtr = std::shared_ptr<GlobalConfig>(new GlobalConfig);
-        m_configPtr->m_file = cv::FileStorage( file_.c_str(), cv::FileStorage::READ );
-        if ( !m_configPtr->m_file.isOpened() )
-        {
-            std::cerr<<"parameter file " << file_ <<" does not exist."<<std::endl;
-
-            m_configPtr->m_file.release();
-            return;
-        }
-
-        data_dir = GlobalConfig::get<std::string>("data_dir");
-        asso_file = GlobalConfig::get<std::string>("association_file");
-        color_prefix = GlobalConfig::get<std::string>("color_prefix");
-        depth_prefix = GlobalConfig::get<std::string>("depth_prefix");
-        file_format = GlobalConfig::get<std::string>("file_format");
-
-        source_img_no = GlobalConfig::get<int>("source_image_no");
-        target_img_no = GlobalConfig::get<int>("target_image_no");
-
-        canny_threshold_low = GlobalConfig::get<double>("canny_threshold_low");
-        canny_threshold_high = GlobalConfig::get<double>("canny_threshold_high");
-
-        fx = GlobalConfig::get<double>("fx");
-        fy = GlobalConfig::get<double>("fy");
-        cx = GlobalConfig::get<double>("cx");
-        cy = GlobalConfig::get<double>("cy");
-
-        depth_factor = GlobalConfig::get<double>("depth_factor");
-    }
-
-    // access the parameter values
-    template< typename T >
-    static T get( const std::string& key )
-    {
-        return T( GlobalConfig::m_configPtr->m_file[key] );
-    }
-
-    ~GlobalConfig(){
-        if (m_file.isOpened())
-            m_file.release();
-    }
-
-public:
-    static std::string data_dir, color_prefix, depth_prefix, file_format, asso_file;
-    static int source_img_no, target_img_no;
-    static double canny_threshold_low, canny_threshold_high, fx, fy, cx, cy, depth_factor;
-
-};
-
-std::shared_ptr<GlobalConfig> GlobalConfig::m_configPtr = nullptr;
-std::string GlobalConfig::data_dir, GlobalConfig::color_prefix,
-        GlobalConfig::depth_prefix, GlobalConfig::file_format, GlobalConfig::asso_file;
-int GlobalConfig::source_img_no, GlobalConfig::target_img_no;
-double GlobalConfig::canny_threshold_low, GlobalConfig::canny_threshold_high,
-        GlobalConfig::fx, GlobalConfig::fy, GlobalConfig::cx, GlobalConfig::cy, GlobalConfig::depth_factor;
 
 #endif //CERES_LEARNING_TYPE_H

@@ -5,6 +5,7 @@
 #ifndef CERES_LEARNING_FUNCTOR_H
 #define CERES_LEARNING_FUNCTOR_H
 
+#include "Config.h"
 #include "Type.h"
 
 #include <ceres/ceres.h>
@@ -16,13 +17,14 @@ class PhotometricCostFunctor : public ceres::SizedCostFunction<1 , 6>
 public:
     PhotometricCostFunctor() = delete;
     PhotometricCostFunctor(Measurement const &pt,
-                           const Image &img,
+                           const Image::ConstPtr img,
                            CamConfig::Ptr camera)
             :src_img(img), m_pt(pt.pt), measurement(pt.pixel), m_cam(camera),
              fx_(camera->fx), fy_(camera->fy), cx_(camera->cx), cy_(camera->cy)
     {
         // std::cout << this->num_residuals() << std::endl;
     }
+    virtual ~PhotometricCostFunctor() {}
 
     virtual bool Evaluate(double const *const *parameters,
                           double *residuals,
@@ -60,7 +62,7 @@ public:
 
 
         // compute residuals
-        residuals[0] = getPixel(u_, v_) - measurement;
+        residuals[0] = getPixelDistance(u_, v_) - measurement;
 
         // compute jacobians
         if (jacobians != NULL && jacobians[0] != NULL) {
@@ -82,10 +84,8 @@ public:
 
             // std::cout << "uv_ksai jacobians computed" << std::endl;
             Eigen::Matrix<double, 1, 2> jacobian_pixel_uv;
-            jacobian_pixel_uv(0, 0) = (getPixel(u_ + 1, v_) - getPixel(u_ - 1, v_)) / 2;
-            jacobian_pixel_uv(0, 1) = (getPixel(u_, v_ + 1) - getPixel(u_, v_ - 1)) / 2;
-
-            // std::cout << "pixel jacobians computed" << std::endl;
+            jacobian_pixel_uv(0, 0) = (getPixelDistance(u_ + 1, v_) - getPixelDistance(u_ - 1, v_)) / 2;
+            jacobian_pixel_uv(0, 1) = (getPixelDistance(u_, v_ + 1) - getPixelDistance(u_, v_ - 1)) / 2;
 
             Eigen::Matrix<double, 1, 6> jacobian_ = jacobian_pixel_uv * jacobian_uv_ksai;
             for (int i = 0; i != 6; ++i)
@@ -102,28 +102,39 @@ public:
 protected:
     const bool isInImage(double &u, double &v) const
     {
-        return (u-2>0 && u+2<src_img.distance.cols &&
-                v-2>0 && v-2<src_img.distance.rows);
+        return (u-2>0 && u+2<src_img->distance.cols &&
+                v-2>0 && v-2<src_img->distance.rows);
     }
 
-    float getPixel(double const &u, double const &v) const
+    const double getPixelDistance(double const &u, double const &v) const
     {
-        uchar* data = & src_img.distance.data[ int ( v ) * src_img.distance.step + int ( u ) ];
+        uchar* data = & src_img->distance.data[ int ( v ) * src_img->distance.step + int ( u ) ];
         double xx = u - floor ( u );
         double yy = v - floor ( v );
-        return float (
+        return double (
                 ( 1-xx ) * ( 1-yy ) * data[0] +
                 xx* ( 1-yy ) * data[1] +
-                ( 1-xx ) *yy*data[ src_img.distance.step ] +
-                xx*yy*data[src_img.distance.step+1]
+                ( 1-xx ) *yy*data[ src_img->distance.step ] +
+                xx*yy*data[src_img->distance.step+1]
         );
+    }
 
-        // return float(src_img.m_img.at<uchar>(static_cast<int>(v), static_cast<int>(u)));
+    const float getPixelGray(double const &u, double const &v) const
+    {
+        uchar* data = & src_img->gray.data[ int ( v ) * src_img->gray.step + int ( u ) ];
+        double xx = u - floor ( u );
+        double yy = v - floor ( v );
+        return double (
+                ( 1-xx ) * ( 1-yy ) * data[0] +
+                xx* ( 1-yy ) * data[1] +
+                ( 1-xx ) *yy*data[ src_img->gray.step ] +
+                xx*yy*data[src_img->gray.step+1]
+        );
     }
 
 private:
     Sophus::SE3 m_T;
-    const Image src_img;
+    const Image::ConstPtr src_img;
     const Eigen::Vector3d m_pt;
     const double measurement;
     CamConfig::Ptr m_cam;
