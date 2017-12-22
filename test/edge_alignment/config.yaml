@@ -37,3 +37,8 @@ max_num_iterations : 1000
 minimizer_progress_to_stdout : 1 # 0:false 1:true
 
 use_distance_transeform : 1
+
+use_subgrandient : 0
+
+use_lossfuction : 0
+loss_fuction_type : 0
