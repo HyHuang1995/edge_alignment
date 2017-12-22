@@ -13,6 +13,6 @@ Tested on **Ubuntu 16.04 Desktop** with **OpenCV 3.3**, **Eigen3**, **Ceres** an
 ```
 
 ## Result
-![](https://photos.app.goo.gl/GCFOCtSNojESh2qY2)
+![](https://github.com/hyhuang1992/edge_alignment/raw/master/result.png)
 1.edge from source image. 2.distance transform of target image
 3.edge reprojection to target image 4.optimization result
